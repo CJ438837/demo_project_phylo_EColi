@@ -1,0 +1,162 @@
+
+---
+title: "Comparative Genomics Analysis of Escherichia coli"
+author: "CJA"
+date: "2025-12-16"
+output:
+  pdf_document: default
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center"
+)
+
+library(tidyverse)
+library(rstatix)
+library(ggpubr)
+library(ggdendro)
+library(factoextra)
+```
+
+1. Introduction
+
+This report presents a comparative genomics analysis based on complete bacterial genomes.
+The dataset was automatically retrieved from public databases and processed through a reproducible pipeline.
+The focus is on GC content, genome size, and exploratory clustering.
+
+2. Data Loading
+
+```{r}
+
+df <- read.csv("D:/Programation/phylo E.Coli/genome_features.csv")
+
+df$genus <- as.factor(df$genus)
+
+str(df)
+summary(df)
+```
+3. Descriptive Statistics
+```{r}
+desc_stats <- df %>%
+group_by(genus) %>%
+summarise(
+n_genomes = n(),
+mean_gc = mean(gc_content_percent),
+sd_gc = sd(gc_content_percent),
+mean_size_mb = mean(genome_size_bp) / 1e6
+)
+
+desc_stats
+
+```
+4. Distribution of GC Content
+```{r}
+ggplot(df, aes(gc_content_percent)) +
+geom_histogram(bins = 30, fill = "steelblue", color = "black") +
+theme_minimal() +
+labs(
+title = "Distribution of GC Content",
+x = "GC content (%)",
+y = "Count"
+)
+
+```
+5. Normality Assessment
+```{r}
+normality <- df %>%
+group_by(genus) %>%
+shapiro_test(gc_content_percent)
+
+normality
+
+```
+6. Relationship Between GC Content and Genome Size
+```{r}
+ggplot(df, aes(genome_size_bp / 1e6, gc_content_percent)) +
+geom_point(size = 2, alpha = 0.7) +
+geom_smooth(method = "lm", se = FALSE) +
+theme_minimal() +
+labs(
+title = "GC Content vs Genome Size",
+x = "Genome size (Mb)",
+y = "GC content (%)"
+)
+
+cor_test <- cor.test(
+df$genome_size_bp,
+df$gc_content_percent,
+method = "spearman"
+)
+
+cor_test
+
+```
+7. GC Content by Genus
+```{r}
+ggplot(df, aes(genus, gc_content_percent, fill = genus)) +
+geom_boxplot(alpha = 0.7) +
+geom_jitter(width = 0.2, alpha = 0.5) +
+theme_minimal() +
+labs(
+title = "GC Content by Genus",
+x = "Genus",
+y = "GC content (%)"
+) +
+theme(legend.position = "none")
+
+
+```
+8. Hierarchical Clustering (Exploratory Phylogeny)
+8.1 Feature Scaling and Distance Matrix
+```{r}
+row.names(df) <- df$genome_id
+
+features <- df %>%
+select(gc_content_percent, genome_size_bp, n_contigs) %>%
+scale()
+
+dist_matrix <- dist(features, method = "euclidean")
+
+```
+8.2 Hierarchical Clustering
+```{r}
+hc <- hclust(dist_matrix, method = "ward.D2")
+
+```
+8.3 Dendrogram Visualization
+```{r}
+fviz_dend(
+hc,
+k = 3,
+rect = TRUE,
+cex = 0.6,
+main = "Genome Similarity Clustering"
+)
+
+
+```
+8.4 Cluster Interpretation
+```{r}
+df$cluster <- cutree(hc, k = 3)
+
+ggplot(df, aes(cluster, gc_content_percent)) +
+geom_boxplot(fill = "steelblue") +
+theme_minimal() +
+labs(
+title = "GC Content by Cluster",
+x = "Cluster",
+y = "GC content (%)"
+)
+
+
+```
+9. Conclusion
+
+This exploratory comparative genomics analysis highlights variability in GC content and genome size within the dataset.
+Hierarchical clustering reveals genome groups based on global genomic features.
+Such approaches provide a fast and informative way to explore genomic similarity without requiring heavy phylogenetic pipelines.

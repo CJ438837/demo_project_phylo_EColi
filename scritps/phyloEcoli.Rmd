@@ -142,16 +142,17 @@ main = "Genome Similarity Clustering"
 ```
 8.4 Cluster Interpretation
 ```{r}
-df$cluster <- cutree(hc, k = 3)
+df$cluster <- factor(cutree(hc, k = 3))  # <- important : factor
 
-ggplot(df, aes(cluster, gc_content_percent)) +
-geom_boxplot(fill = "steelblue") +
-theme_minimal() +
-labs(
-title = "GC Content by Cluster",
-x = "Cluster",
-y = "GC content (%)"
-)
+ggplot(df, aes(x = cluster, y = gc_content_percent)) +
+  geom_boxplot(fill = "steelblue") +
+  theme_minimal() +
+  labs(
+    title = "GC Content by Cluster",
+    x = "Cluster",
+    y = "GC content (%)"
+  )
+
 
 
 ```
@@ -159,4 +160,5 @@ y = "GC content (%)"
 
 This exploratory comparative genomics analysis highlights variability in GC content and genome size within the dataset.
 Hierarchical clustering reveals genome groups based on global genomic features.
+
 Such approaches provide a fast and informative way to explore genomic similarity without requiring heavy phylogenetic pipelines.
